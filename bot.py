@@ -149,6 +149,103 @@ class AdvancedFinanceBotManager:
         except Exception as e:
             logger.error(f"Error verificando encabezados: {e}")
             return False
+    
+    def _ensure_all_sheet_headers(self):
+        """Asegura que todas las hojas tengan los encabezados correctos"""
+        success = True
+        
+        # Hoja principal de transacciones
+        if sheet:
+            try:
+                headers = sheet.row_values(1)
+                expected_headers = ['Fecha', 'Usuario', 'Tipo', 'Monto', 'Categoria', 'Descripcion', 'Fecha_Vencimiento', 'Estado_Pago']
+                if not headers or headers != expected_headers:
+                    sheet.clear()
+                    sheet.append_row(expected_headers)
+                    logger.info("📋 Encabezados de la hoja principal actualizados")
+            except Exception as e:
+                logger.error(f"❌ Error al configurar encabezados principales: {e}")
+                success = False
+        
+        # Hoja de metas de ahorro
+        if sheet_goals:
+            try:
+                headers = sheet_goals.row_values(1)
+                goals_headers = ['Usuario_ID', 'Usuario_Nombre', 'Meta_Nombre', 'Monto_Meta', 'Monto_Ahorrado', 'Fecha_Limite', 'Fecha_Creacion', 'Estado']
+                if not headers or headers != goals_headers:
+                    sheet_goals.clear()
+                    sheet_goals.append_row(goals_headers)
+                    logger.info("📋 Encabezados de Metas de Ahorro configurados")
+            except Exception as e:
+                logger.error(f"❌ Error en encabezados de metas: {e}")
+                success = False
+        
+        # Hoja de presupuestos
+        if sheet_budgets:
+            try:
+                headers = sheet_budgets.row_values(1)
+                budget_headers = ['Usuario_ID', 'Usuario_Nombre', 'Categoria', 'Presupuesto', 'Fecha_Creacion', 'Estado']
+                if not headers or headers != budget_headers:
+                    sheet_budgets.clear()
+                    sheet_budgets.append_row(budget_headers)
+                    logger.info("📋 Encabezados de Presupuestos configurados")
+            except Exception as e:
+                logger.error(f"❌ Error en encabezados de presupuestos: {e}")
+                success = False
+        
+        # Hoja de usuarios
+        if sheet_users:
+            try:
+                headers = sheet_users.row_values(1)
+                user_headers = ['Usuario_ID', 'Usuario_Nombre', 'Fecha_Registro', 'Ultima_Actividad', 'Dia_Pago', 'Fecha_Pago_Completa', 'Ingreso_Mensual', 'Configuraciones']
+                if not headers or headers != user_headers:
+                    sheet_users.clear()
+                    sheet_users.append_row(user_headers)
+                    logger.info("📋 Encabezados de Usuarios configurados")
+            except Exception as e:
+                logger.error(f"❌ Error en encabezados de usuarios: {e}")
+                success = False
+        
+        # Hoja de categorías personalizadas
+        if sheet_categories:
+            try:
+                headers = sheet_categories.row_values(1)
+                category_headers = ['Usuario_ID', 'Tipo_Registro', 'Categoria_Personalizada', 'Fecha_Creacion']
+                if not headers or headers != category_headers:
+                    sheet_categories.clear()
+                    sheet_categories.append_row(category_headers)
+                    logger.info("📋 Encabezados de Categorías Personalizadas configurados")
+            except Exception as e:
+                logger.error(f"❌ Error en encabezados de categorías: {e}")
+                success = False
+        
+        # Hoja de fechas de pago
+        if sheet_paydays:
+            try:
+                headers = sheet_paydays.row_values(1)
+                payday_headers = ['Usuario_ID', 'Usuario_Nombre', 'Dia_Pago', 'Mes_Pago', 'Proxima_Fecha', 'Ultima_Actualizacion']
+                if not headers or headers != payday_headers:
+                    sheet_paydays.clear()
+                    sheet_paydays.append_row(payday_headers)
+                    logger.info("📋 Encabezados de Fechas de Pago configurados")
+            except Exception as e:
+                logger.error(f"❌ Error en encabezados de fechas de pago: {e}")
+                success = False
+        
+        # Hoja de grupos familiares
+        if sheet_family_groups:
+            try:
+                headers = sheet_family_groups.row_values(1)
+                group_headers = ['Grupo_ID', 'Nombre_Grupo', 'Codigo_Invitacion', 'Creador_ID', 'Miembros', 'Fecha_Creacion', 'Estado', 'Configuraciones']
+                if not headers or headers != group_headers:
+                    sheet_family_groups.clear()
+                    sheet_family_groups.append_row(group_headers)
+                    logger.info("📋 Encabezados de Grupos Familiares configurados")
+            except Exception as e:
+                logger.error(f"❌ Error en encabezados de grupos familiares: {e}")
+                success = False
+        
+        return success
         
     def register_user(self, user_id, username):
         """Registra un nuevo usuario con perfil completo"""
@@ -230,7 +327,7 @@ class AdvancedFinanceBotManager:
         """Carga todos los datos desde Google Sheets"""
         # Asegurar que todas las hojas tengan encabezados antes de cargar datos
         logger.info("🔧 Verificando y configurando encabezados de hojas...")
-        ensure_all_sheet_headers()
+        self._ensure_all_sheet_headers()
         
         logger.info("📊 Iniciando carga de datos desde Google Sheets...")
         self.load_users_data()
