@@ -35,7 +35,18 @@ logger = logging.getLogger(__name__)
 
 # Configuración de Google Sheets
 try:
-    creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", GOOGLE_SHEETS_SCOPE)
+    # Intentar usar variable de entorno primero (Railway/Heroku)
+    google_creds_json = os.getenv('GOOGLE_CREDENTIALS_JSON')
+    if google_creds_json:
+        # Usar credenciales desde variable de entorno
+        import json
+        from oauth2client.service_account import ServiceAccountCredentials
+        creds_dict = json.loads(google_creds_json)
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, GOOGLE_SHEETS_SCOPE)
+    else:
+        # Fallback a archivo local
+        creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", GOOGLE_SHEETS_SCOPE)
+    
     client = gspread.authorize(creds)
     spreadsheet = client.open(GOOGLE_SHEETS_NAME)
     
