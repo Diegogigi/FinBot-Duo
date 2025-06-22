@@ -1282,7 +1282,16 @@ def receive_username(update: Update, context: CallbackContext):
     # Actualizar username del usuario
     if user_id in bot_manager.users:
         bot_manager.users[user_id]['username'] = username
-        bot_manager.save_user_data(user_id)
+        # Guardar en Google Sheets inmediatamente
+        success = bot_manager.save_user_data(user_id)
+        if success:
+            logger.info(f"✅ Nombre de usuario guardado correctamente: {username} (ID: {user_id})")
+        else:
+            logger.error(f"❌ Error guardando nombre de usuario: {username} (ID: {user_id})")
+    else:
+        # Si el usuario no existe, registrarlo primero
+        bot_manager.register_user(user_id, username)
+        logger.info(f"👤 Usuario registrado con nombre personalizado: {username} (ID: {user_id})")
     
     # Mostrar opciones de registro
     keyboard = [
@@ -1360,6 +1369,9 @@ Este código tiene 8 caracteres (letras y números).
     elif data == "continue_solo":
         username = bot_manager.users.get(user_id, {}).get('username', 'Usuario')
         
+        # Asegurarse de que el usuario esté guardado en Google Sheets
+        bot_manager.save_user_data(user_id)
+        
         # Ir directamente al menú principal
         markup = ReplyKeyboardMarkup(create_enhanced_main_menu(), one_time_keyboard=True, resize_keyboard=True)
         
@@ -1396,6 +1408,9 @@ def receive_group_name(update: Update, context: CallbackContext):
     try:
         group_id, invitation_code = bot_manager.create_family_group(user_id, group_name)
         username = bot_manager.users.get(user_id, {}).get('username', 'Usuario')
+        
+        # Asegurarse de que el usuario esté guardado en Google Sheets
+        bot_manager.save_user_data(user_id)
         
         # Mensaje de éxito con código de invitación
         success_msg = f"""
@@ -1450,6 +1465,9 @@ def receive_invitation_code(update: Update, context: CallbackContext):
     if success:
         username = bot_manager.users.get(user_id, {}).get('username', 'Usuario')
         group = bot_manager.get_user_group(user_id)
+        
+        # Asegurarse de que el usuario esté guardado en Google Sheets
+        bot_manager.save_user_data(user_id)
         
         success_msg = f"""
 🎉 **¡Te has unido exitosamente!**
