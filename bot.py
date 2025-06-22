@@ -138,6 +138,17 @@ class AdvancedFinanceBotManager:
         
         # Cargar datos desde Google Sheets al inicializar
         self.load_all_data()
+    
+    def _ensure_sheet_has_headers(self, sheet, expected_headers):
+        """Verifica que una hoja tenga los encabezados correctos"""
+        try:
+            if not sheet:
+                return False
+            headers = sheet.row_values(1)
+            return headers == expected_headers
+        except Exception as e:
+            logger.error(f"Error verificando encabezados: {e}")
+            return False
         
     def register_user(self, user_id, username):
         """Registra un nuevo usuario con perfil completo"""
@@ -166,13 +177,25 @@ class AdvancedFinanceBotManager:
             return False
             
         try:
+            # Asegurar que la hoja tenga encabezados correctos
+            expected_headers = ['Usuario_ID', 'Usuario_Nombre', 'Fecha_Registro', 'Ultima_Actividad', 'Dia_Pago', 'Fecha_Pago_Completa', 'Ingreso_Mensual', 'Configuraciones']
+            if not self._ensure_sheet_has_headers(sheet_users, expected_headers):
+                logger.info("Configurando encabezados de usuarios...")
+                sheet_users.clear()
+                sheet_users.append_row(expected_headers)
+            
             user_info = self.users[user_id]
             now = datetime.datetime.now(TIMEZONE).strftime("%Y-%m-%d %H:%M")
             registered = user_info['registered_date'].strftime("%Y-%m-%d") if isinstance(user_info['registered_date'], datetime.datetime) else str(user_info['registered_date'])
             last_activity = user_info['last_activity'].strftime("%Y-%m-%d %H:%M") if isinstance(user_info['last_activity'], datetime.datetime) else str(user_info['last_activity'])
             
-            # Buscar si el usuario ya existe
-            records = sheet_users.get_all_records()
+            # Buscar si el usuario ya existe (manejo seguro)
+            try:
+                records = sheet_users.get_all_records()
+            except Exception as e:
+                logger.warning(f"Error obteniendo registros, usando lista vacía: {e}")
+                records = []
+                
             existing_row = None
             for i, record in enumerate(records, 2):  # Empezar desde fila 2
                 if str(record.get('Usuario_ID')) == str(user_id):
@@ -205,12 +228,18 @@ class AdvancedFinanceBotManager:
     
     def load_all_data(self):
         """Carga todos los datos desde Google Sheets"""
+        # Asegurar que todas las hojas tengan encabezados antes de cargar datos
+        logger.info("🔧 Verificando y configurando encabezados de hojas...")
+        ensure_all_sheet_headers()
+        
+        logger.info("📊 Iniciando carga de datos desde Google Sheets...")
         self.load_users_data()
         self.load_goals_data()
         self.load_budgets_data()
         self.load_categories_data()
         self.load_paydays_data()
         self.load_family_groups_data()
+        logger.info("✅ Carga de datos completada")
     
     def load_users_data(self):
         """Carga datos de usuarios desde Google Sheets"""
@@ -218,9 +247,23 @@ class AdvancedFinanceBotManager:
             return
             
         try:
+            # Verificar que la hoja tenga encabezados correctos
+            if not self._ensure_sheet_has_headers(sheet_users, ['Usuario_ID', 'Usuario_Nombre', 'Fecha_Registro', 'Ultima_Actividad', 'Dia_Pago', 'Fecha_Pago_Completa', 'Ingreso_Mensual', 'Configuraciones']):
+                logger.warning("Hoja de usuarios sin encabezados correctos, saltando carga")
+                return
+                
             records = sheet_users.get_all_records()
+            if not records:  # Si no hay datos, es normal
+                logger.info("Hoja de usuarios vacía, no hay datos para cargar")
+                return
+                
             for record in records:
-                user_id = int(record.get('Usuario_ID', 0))
+                try:
+                    user_id = int(record.get('Usuario_ID', 0))
+                except (ValueError, TypeError):
+                    logger.warning(f"Usuario_ID inválido en registro de usuarios: {record}")
+                    continue
+                    
                 if user_id > 0:
                     try:
                         registered_date = datetime.datetime.strptime(record.get('Fecha_Registro', ''), "%Y-%m-%d")
@@ -283,9 +326,23 @@ class AdvancedFinanceBotManager:
             return
             
         try:
+            # Verificar que la hoja tenga encabezados correctos
+            if not self._ensure_sheet_has_headers(sheet_goals, ['Usuario_ID', 'Usuario_Nombre', 'Meta_Nombre', 'Monto_Meta', 'Monto_Ahorrado', 'Fecha_Limite', 'Fecha_Creacion', 'Estado']):
+                logger.warning("Hoja de metas sin encabezados correctos, saltando carga")
+                return
+                
             records = sheet_goals.get_all_records()
+            if not records:
+                logger.info("Hoja de metas vacía, no hay datos para cargar")
+                return
+                
             for record in records:
-                user_id = int(record.get('Usuario_ID', 0))
+                try:
+                    user_id = int(record.get('Usuario_ID', 0))
+                except (ValueError, TypeError):
+                    logger.warning(f"Usuario_ID inválido en registro de metas: {record}")
+                    continue
+                    
                 if user_id > 0:
                     if user_id not in self.goals:
                         self.goals[user_id] = []
@@ -313,8 +370,13 @@ class AdvancedFinanceBotManager:
             username = self.users.get(user_id, {}).get('username', f'Usuario{user_id}')
             now = datetime.datetime.now(TIMEZONE).strftime("%Y-%m-%d %H:%M")
             
-            # Buscar si ya existe un presupuesto para esta categoría
-            records = sheet_budgets.get_all_records()
+            # Buscar si ya existe un presupuesto para esta categoría (manejo seguro)
+            try:
+                records = sheet_budgets.get_all_records()
+            except Exception as e:
+                logger.warning(f"Error obteniendo registros de presupuestos, usando lista vacía: {e}")
+                records = []
+                
             existing_row = None
             for i, record in enumerate(records, 2):  # Empezar desde fila 2
                 if (str(record.get('Usuario_ID')) == str(user_id) and 
@@ -350,9 +412,23 @@ class AdvancedFinanceBotManager:
             return
             
         try:
+            # Verificar que la hoja tenga encabezados correctos
+            if not self._ensure_sheet_has_headers(sheet_budgets, ['Usuario_ID', 'Usuario_Nombre', 'Categoria', 'Presupuesto', 'Fecha_Creacion', 'Estado']):
+                logger.warning("Hoja de presupuestos sin encabezados correctos, saltando carga")
+                return
+                
             records = sheet_budgets.get_all_records()
+            if not records:
+                logger.info("Hoja de presupuestos vacía, no hay datos para cargar")
+                return
+                
             for record in records:
-                user_id = int(record.get('Usuario_ID', 0))
+                try:
+                    user_id = int(record.get('Usuario_ID', 0))
+                except (ValueError, TypeError):
+                    logger.warning(f"Usuario_ID inválido en registro de presupuestos: {record}")
+                    continue
+                    
                 if user_id > 0:
                     if user_id not in self.budgets:
                         self.budgets[user_id] = {}
@@ -395,9 +471,23 @@ class AdvancedFinanceBotManager:
             return
             
         try:
+            # Verificar que la hoja tenga encabezados correctos
+            if not self._ensure_sheet_has_headers(sheet_categories, ['Usuario_ID', 'Tipo_Registro', 'Categoria_Personalizada', 'Fecha_Creacion']):
+                logger.warning("Hoja de categorías sin encabezados correctos, saltando carga")
+                return
+                
             records = sheet_categories.get_all_records()
+            if not records:
+                logger.info("Hoja de categorías vacía, no hay datos para cargar")
+                return
+                
             for record in records:
-                user_id = int(record.get('Usuario_ID', 0))
+                try:
+                    user_id = int(record.get('Usuario_ID', 0))
+                except (ValueError, TypeError):
+                    logger.warning(f"Usuario_ID inválido en registro de categorías: {record}")
+                    continue
+                    
                 if user_id > 0:
                     if user_id not in self.custom_categories:
                         self.custom_categories[user_id] = {}
@@ -433,8 +523,13 @@ class AdvancedFinanceBotManager:
             if next_payday < today:
                 next_payday = datetime.datetime(current_year + 1, month, day, tzinfo=TIMEZONE)
             
-            # Buscar si ya existe
-            records = sheet_paydays.get_all_records()
+            # Buscar si ya existe (manejo seguro)
+            try:
+                records = sheet_paydays.get_all_records()
+            except Exception as e:
+                logger.warning(f"Error obteniendo registros de fechas de pago, usando lista vacía: {e}")
+                records = []
+                
             existing_row = None
             for i, record in enumerate(records, 2):
                 if str(record.get('Usuario_ID')) == str(user_id):
@@ -467,12 +562,30 @@ class AdvancedFinanceBotManager:
             return
             
         try:
+            # Verificar que la hoja tenga encabezados correctos
+            if not self._ensure_sheet_has_headers(sheet_paydays, ['Usuario_ID', 'Usuario_Nombre', 'Dia_Pago', 'Mes_Pago', 'Proxima_Fecha', 'Ultima_Actualizacion']):
+                logger.warning("Hoja de fechas de pago sin encabezados correctos, saltando carga")
+                return
+                
             records = sheet_paydays.get_all_records()
+            if not records:
+                logger.info("Hoja de fechas de pago vacía, no hay datos para cargar")
+                return
+                
             for record in records:
-                user_id = int(record.get('Usuario_ID', 0))
+                try:
+                    user_id = int(record.get('Usuario_ID', 0))
+                except (ValueError, TypeError):
+                    logger.warning(f"Usuario_ID inválido en registro de fechas de pago: {record}")
+                    continue
+                    
                 if user_id > 0:
-                    day = int(record.get('Dia_Pago', 0) or 0)
-                    month = int(record.get('Mes_Pago', 0) or 0)
+                    try:
+                        day = int(record.get('Dia_Pago', 0) or 0)
+                        month = int(record.get('Mes_Pago', 0) or 0)
+                    except (ValueError, TypeError):
+                        logger.warning(f"Día/mes de pago inválido para usuario {user_id}: {record}")
+                        continue
                     
                     if day > 0:
                         self.paydays[user_id] = day
@@ -820,7 +933,13 @@ class AdvancedFinanceBotManager:
             return False
         
         try:
-            records = sheet_family_groups.get_all_records()
+            # Obtener registros con manejo seguro
+            try:
+                records = sheet_family_groups.get_all_records()
+            except Exception as e:
+                logger.warning(f"Error obteniendo registros de grupos familiares, usando lista vacía: {e}")
+                records = []
+                
             existing_row = None
             
             for i, record in enumerate(records, 2):
@@ -847,7 +966,16 @@ class AdvancedFinanceBotManager:
             return
         
         try:
+            # Verificar que la hoja tenga encabezados correctos
+            if not self._ensure_sheet_has_headers(sheet_family_groups, ['Grupo_ID', 'Nombre_Grupo', 'Codigo_Invitacion', 'Creador_ID', 'Miembros', 'Fecha_Creacion', 'Estado', 'Configuraciones']):
+                logger.warning("Hoja de grupos familiares sin encabezados correctos, saltando carga")
+                return
+                
             records = sheet_family_groups.get_all_records()
+            if not records:
+                logger.info("Hoja de grupos familiares vacía, no hay datos para cargar")
+                return
+                
             for record in records:
                 group_id = record.get('Grupo_ID', '')
                 if group_id:
@@ -867,12 +995,19 @@ class AdvancedFinanceBotManager:
                             username = self.users.get(member_id, {}).get('username', f'Usuario{member_id}')
                             member_usernames.append(username)
                         
+                        # Obtener creator_id con manejo seguro
+                        try:
+                            creator_id = int(record.get('Creador_ID', 0))
+                        except (ValueError, TypeError):
+                            logger.warning(f"Creador_ID inválido en grupo {group_id}: {record}")
+                            creator_id = 0
+                        
                         group_data = {
                             'id': group_id,
                             'name': record.get('Nombre_Grupo', ''),
                             'invitation_code': record.get('Codigo_Invitacion', ''),
-                            'creator_id': int(record.get('Creador_ID', 0)),
-                            'creator_username': self.users.get(int(record.get('Creador_ID', 0)), {}).get('username', ''),
+                            'creator_id': creator_id,
+                            'creator_username': self.users.get(creator_id, {}).get('username', ''),
                             'members': members,
                             'member_usernames': member_usernames,
                             'created_date': created_date,
