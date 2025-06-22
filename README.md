@@ -1,0 +1,2 @@
+# FinBot-Duo
+Proyecto personal
