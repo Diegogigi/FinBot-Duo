@@ -1,0 +1,57 @@
+# ======================================
+# 🏦 BOT DE FINANZAS FAMILIARES
+# Archivo de configuración de variables de entorno
+# ======================================
+
+# INSTRUCCIONES:
+# 1. Renombra este archivo a .env
+# 2. Reemplaza los valores de ejemplo con tus datos reales
+# 3. NO subas el archivo .env a repositorios públicos
+
+# Variables de entorno para FinBot Duo Avanzado
+# Copia este archivo, renómbralo a .env y completa los valores
+
+# =================
+# TELEGRAM BOT
+# =================
+BOT_TOKEN=tu_token_del_bot_aqui
+
+# =================
+# GOOGLE SHEETS
+# =================
+GOOGLE_SHEETS_NAME=nombre_de_tu_hoja_de_google_sheets
+GOOGLE_SHEETS_SCOPE=["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+
+# =================
+# CONFIGURACIÓN REGIONAL
+# =================
+TIMEZONE=America/Santiago
+
+# =================
+# CONFIGURACIÓN DE CREDENCIALES
+# =================
+# Para Railway/Heroku, puedes usar variables de entorno directamente
+# o subir el archivo credentials.json (no recomendado para seguridad)
+
+# Opcional: Credenciales de Google como JSON string para producción
+GOOGLE_CREDENTIALS_JSON=contenido_del_archivo_credentials_json_aqui
+
+# =================
+# CONFIGURACIÓN DE HOSTING
+# =================
+PORT=8000
+HOST=0.0.0.0
+
+# ======================================
+# CONFIGURACIONES OPCIONALES
+# ======================================
+
+# IDs de usuarios autorizados (opcional)
+# Si quieres restringir el acceso solo a ciertos usuarios,
+# agrega sus IDs de Telegram separados por comas
+# Para obtener tu ID: habla con @userinfobot en Telegram
+# AUTHORIZED_USERS=123456789,987654321
+
+# Configuración de recordatorios (opcional)
+# Hora para enviar recordatorios automáticos (formato 24h)
+# REMINDER_TIME=09:00 

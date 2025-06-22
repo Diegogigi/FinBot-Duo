@@ -1,0 +1,6 @@
+Fecha,Usuario,Tipo,Monto,Categoria,Descripcion,Fecha_Vencimiento,Estado_Pago
+2024-01-15 10:30,Usuario1,Ingreso,1500000,Sueldo,Salario mensual,,Completado
+2024-01-16 14:20,Usuario2,Gasto,350000,Supermercado,Compras semanales,,Completado
+2024-01-17 09:15,Usuario1,Deuda,200000,Tarjeta de Credito,Cuota mensual,2024-02-15,Pendiente
+2024-01-18 16:45,Usuario2,Gasto,80000,Transporte,Bencina del mes,,Completado
+2024-01-19 11:30,Usuario1,Ingreso,250000,Freelance,Trabajo extra,,Completado 
